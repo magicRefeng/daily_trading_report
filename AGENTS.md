@@ -18,7 +18,7 @@
 4. 分析今日关注事项
 5. 形成今日核心判断（必须结构化）
 6. 制定投资策略建议（必须具体可执行）
-7. 保存为 YYYYMMDD/morning_report_YYYYMMDD.md
+7. 保存为 report/YYYYMMDD/morning_report_YYYYMMDD.md
 8. 执行 ./auto_commit.sh 晨报
 ```
 
@@ -31,7 +31,7 @@
 5. 量化评估准确率
 6. 分析偏差根因
 7. 沉淀为检查清单和规则
-8. 保存为 YYYYMMDD/evening_report_YYYYMMDD.md
+8. 保存为 report/YYYYMMDD/evening_report_YYYYMMDD.md
 9. 执行 ./auto_commit.sh 晚报
 ```
 

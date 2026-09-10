@@ -11,9 +11,10 @@
 ├── AGENTS.md                   # AI代理使用指南
 ├── README.md                   # 项目说明文档
 ├── rules.md                    # 规则库（自动更新）
-└── YYYYMMDD/                   # 日期文件夹（按日期组织）
-    ├── morning_report_YYYYMMDD.md  # 晨报文件
-    └── evening_report_YYYYMMDD.md  # 晚报文件
+└── report/                       # 报告目录
+    └── YYYYMMDD/                 # 日期文件夹（按日期组织）
+        ├── morning_report_YYYYMMDD.md  # 晨报文件
+        └── evening_report_YYYYMMDD.md  # 晚报文件
 ```
 
 ## 核心功能
@@ -49,7 +50,7 @@
 ```bash
 # 使用AI代理读取提示词并生成晨报
 # 读取 morning_report_prompt.txt
-# 生成 YYYYMMDD/morning_report_YYYYMMDD.md
+# 生成 report/YYYYMMDD/morning_report_YYYYMMDD.md
 # 执行 ./auto_commit.sh 晨报
 ```
 
@@ -57,7 +58,7 @@
 ```bash
 # 使用AI代理读取提示词并生成晚报
 # 读取 evening_report_prompt.txt
-# 生成 YYYYMMDD/evening_report_YYYYMMDD.md
+# 生成 report/YYYYMMDD/evening_report_YYYYMMDD.md
 # 执行 ./auto_commit.sh 晚报
 ```
 

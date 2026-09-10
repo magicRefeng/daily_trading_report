@@ -154,7 +154,7 @@
 **输出要求：**
 1. 格式：Markdown格式
 2. 文件命名：morning_report_YYYYMMDD.md（如morning_report_20260910.md）
-3. 保存路径：以当前日期为名字的文件夹内（如20260910/morning_report_20260910.md）
+3. 保存路径：report目录下以当前日期为名字的文件夹内（如report/20260910/morning_report_20260910.md）
 4. 标题格式：# A股晨报 - YYYY年MM月DD日
 5. 内容结构：使用Markdown标题、列表、表格等格式化元素
 6. 数据呈现：关键数据使用表格展示，便于阅读

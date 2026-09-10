@@ -7,8 +7,8 @@
 CURRENT_DATE=$(date +%Y%m%d)
 CURRENT_DATE_CN=$(date +%Y年%m月%d日)
 
-# 创建日期文件夹（如果不存在）
-mkdir -p $CURRENT_DATE
+# 创建报告目录和日期文件夹（如果不存在）
+mkdir -p report/$CURRENT_DATE
 
 # 根据参数确定报告类型
 if [ "$1" = "晨报" ]; then
@@ -24,7 +24,7 @@ else
 fi
 
 # 检查文件是否存在
-FILE_PATH="${CURRENT_DATE}/${FILE_NAME}"
+FILE_PATH="report/${CURRENT_DATE}/${FILE_NAME}"
 if [ ! -f "$FILE_PATH" ]; then
     echo "错误：文件 $FILE_PATH 不存在"
     exit 1
