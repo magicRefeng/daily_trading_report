@@ -84,7 +84,23 @@
 
 ## 快速开始
 
-### 1. 生成晨报
+### 1. 配置飞书信息
+
+```bash
+# 复制示例配置文件
+cp config/feishu_config.env.example config/feishu_config.env
+
+# 编辑配置，填入你自己的飞书知识库和用户信息
+# - FEISHU_SPACE_ID：知识库 space_id
+# - FEISHU_HOME_NODE_TOKEN：首页节点 token
+# - FEISHU_HISTORY_NODE_TOKEN：历史报告节点 token
+# - FEISHU_USER_OPEN_ID：用户 open_id（用于消息通知）
+# - FEISHU_HOME_URL：知识库首页链接
+```
+
+> 注意：`config/feishu_config.env` 已加入 `.gitignore`，不会被提交到仓库，请勿将真实 token 泄露。
+
+### 2. 生成晨报
 ```bash
 # 使用AI代理读取提示词并生成晨报
 # 读取 prompt/morning_report_prompt.txt
@@ -92,7 +108,7 @@
 # 执行 ./script/auto_commit.sh 晨报
 ```
 
-### 2. 生成晚报
+### 3. 生成晚报
 ```bash
 # 使用AI代理读取提示词并生成晚报
 # 读取 prompt/evening_report_prompt.txt
@@ -100,7 +116,7 @@
 # 执行 ./script/auto_commit.sh 晚报
 ```
 
-### 3. 自动提交
+### 4. 自动提交
 脚本会自动：
 - 创建日期文件夹
 - 检查文件是否存在
