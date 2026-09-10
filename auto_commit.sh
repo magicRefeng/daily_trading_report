@@ -180,4 +180,13 @@ if [ "$1" = "晚报" ]; then
     git commit -m "自动更新文档：${CURRENT_DATE_CN}晚报复盘后" 2>/dev/null || echo "文档无变化，跳过提交"
 fi
 
+# 自动推送到远程仓库
+echo "正在推送到 GitHub 远程仓库..."
+git push origin main 2>&1
+if [ $? -eq 0 ]; then
+    echo "推送成功：已同步到 GitHub"
+else
+    echo "警告：推送失败，请检查网络或仓库权限"
+fi
+
 echo "提交完成：$COMMIT_MSG"
