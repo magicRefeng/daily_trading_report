@@ -5,14 +5,16 @@
 
 ## 文件结构
 ```
-├── morning_report_prompt.txt    # 晨报提示词（核心）
-├── evening_report_prompt.txt    # 晚报提示词（含复盘模块）
-├── auto_commit.sh              # 自动提交脚本
+├── prompt/                     # 提示词目录
+│   ├── morning_report_prompt.txt  # 晨报提示词（核心）
+│   └── evening_report_prompt.txt  # 晚报提示词（含复盘模块）
+├── script/                     # 脚本目录
+│   └── auto_commit.sh            # 自动提交脚本
 ├── AGENTS.md                   # AI代理使用指南
 ├── README.md                   # 项目说明文档
 ├── rules.md                    # 规则库（自动更新）
-└── report/                       # 报告目录
-    └── YYYYMMDD/                 # 日期文件夹（按日期组织）
+└── report/                     # 报告目录
+    └── YYYYMMDD/               # 日期文件夹（按日期组织）
         ├── morning_report_YYYYMMDD.md  # 晨报文件
         └── evening_report_YYYYMMDD.md  # 晚报文件
 ```
@@ -49,17 +51,17 @@
 ### 1. 生成晨报
 ```bash
 # 使用AI代理读取提示词并生成晨报
-# 读取 morning_report_prompt.txt
+# 读取 prompt/morning_report_prompt.txt
 # 生成 report/YYYYMMDD/morning_report_YYYYMMDD.md
-# 执行 ./auto_commit.sh 晨报
+# 执行 ./script/auto_commit.sh 晨报
 ```
 
 ### 2. 生成晚报
 ```bash
 # 使用AI代理读取提示词并生成晚报
-# 读取 evening_report_prompt.txt
+# 读取 prompt/evening_report_prompt.txt
 # 生成 report/YYYYMMDD/evening_report_YYYYMMDD.md
-# 执行 ./auto_commit.sh 晚报
+# 执行 ./script/auto_commit.sh 晚报
 ```
 
 ### 3. 自动提交
@@ -87,7 +89,7 @@
 
 ## 注意事项
 1. 确保已安装Git并配置好用户信息
-2. 脚本需要执行权限：`chmod +x auto_commit.sh`
+2. 脚本需要执行权限：`chmod +x script/auto_commit.sh`
 3. 文件命名必须符合规范，否则脚本无法识别
 4. 提交信息会自动生成，无需手动编辑
 5. 复盘结果会自动更新检查清单，用于持续优化分析质量
