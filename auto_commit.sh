@@ -57,31 +57,31 @@ if [ "$1" = "晚报" ]; then
             
             case "$CATEGORY" in
                 趋势分析)
-                    sed -i '' '/^## 趋势分析规则$/,/^## /{
+                    sed -i '/^## 趋势分析规则$/,/^## /{
                         /^## /i\
                         - '"${RULE_CONTENT}"'
                     }' rules.md 2>/dev/null || true
                     ;;
                 点位计算)
-                    sed -i '' '/^## 点位计算规则$/,/^## /{
+                    sed -i '/^## 点位计算规则$/,/^## /{
                         /^## /i\
                         - '"${RULE_CONTENT}"'
                     }' rules.md 2>/dev/null || true
                     ;;
                 板块选择)
-                    sed -i '' '/^## 板块选择规则$/,/^## /{
+                    sed -i '/^## 板块选择规则$/,/^## /{
                         /^## /i\
                         - '"${RULE_CONTENT}"'
                     }' rules.md 2>/dev/null || true
                     ;;
                 风险识别)
-                    sed -i '' '/^## 风险识别规则$/,/^## /{
+                    sed -i '/^## 风险识别规则$/,/^## /{
                         /^## /i\
                         - '"${RULE_CONTENT}"'
                     }' rules.md 2>/dev/null || true
                     ;;
                 资金面分析)
-                    sed -i '' '/^## 资金面分析规则$/,/^## /{
+                    sed -i '/^## 资金面分析规则$/,/^## /{
                         /^## /i\
                         - '"${RULE_CONTENT}"'
                     }' rules.md 2>/dev/null || true
@@ -91,7 +91,7 @@ if [ "$1" = "晚报" ]; then
             echo "  新增规则[$CATEGORY]: $RULE_CONTENT"
         done <<< "$NEW_RULES"
         
-        sed -i '' "s/\*最后更新：.*/\*最后更新：${UPDATE_TIME}，来源：${CURRENT_DATE_CN}晚报\*/" rules.md
+        sed -i "s/\*最后更新：.*/\*最后更新：${UPDATE_TIME}，来源：${CURRENT_DATE_CN}晚报\*/" rules.md
         echo "规则库更新完成"
     else
         echo "本次复盘无新规则"
@@ -114,7 +114,7 @@ if [ "$1" = "晚报" ]; then
             cp AGENTS.md AGENTS.md.bak
             
             # 替换晨报流程部分
-            sed -i '' '/^### 晨报生成流程$/,/^### 晚报复盘格式/p' AGENTS.md.bak
+            sed -i '/^### 晨报生成流程$/,/^### 晚报复盘格式/p' AGENTS.md.bak
             
             # 使用awk进行更复杂的替换
             awk -v new_flow="$NEW_MORNING_FLOW" '
