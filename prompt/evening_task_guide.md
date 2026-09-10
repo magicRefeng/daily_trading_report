@@ -3,7 +3,7 @@
 > 本文档为晚报定时任务的详细执行手册，由AI代理在任务启动时读取并严格执行。
 
 ## 任务目标
-生成今日A股晚报（含波浪理论多周期分析 + 晨报复盘），更新月度/年度总结（含波浪分析总结），保存到本地并提交git推送到GitHub，同步到飞书知识库（按年/月/日层级归档），最后发送飞书消息通知。
+生成今日A股晚报（含波浪理论多周期分析 + 晨报复盘），更新当日交易信息动态（完整版），更新月度总结（每次更新），更新年度总结（每月第一个交易日更新），保存到本地并提交git推送到GitHub，同步到飞书知识库，最后发送飞书消息通知。
 
 ## 工作目录
 `/workspace`
@@ -23,6 +23,7 @@
 - `MONTH_CN` = YYYY年M月（当月，如 2026年9月）
 - `YEAR` = YYYY（当年，如 2026）
 - `YEAR_CN` = YYYY年（当年，如 2026年）
+- `PREV_DATE` = 上一个交易日的 YYYYMMDD
 
 ---
 
@@ -34,7 +35,11 @@
    ```bash
    source /workspace/config/feishu_config.env
    ```
-4. 创建目录（如不存在）：
+4. 计算上一个交易日日期 `PREV_DATE`
+5. 判断今日是否为当月第一个交易日：
+   - 检查 `report/` 目录下（不含 history）今日之前是否存在当月日期的目录
+   - 若不存在，则今日为当月第一个交易日
+6. 创建目录（如不存在）：
    ```bash
    mkdir -p /workspace/report/$DATE
    mkdir -p /workspace/report/monthly
@@ -47,10 +52,18 @@
 ## 步骤2：读取文件
 
 1. 读取 `/workspace/prompt/evening_report_prompt.txt` —— 晚报内容格式模板
-2. 读取今日晨报：`/workspace/report/$DATE/morning_report_$DATE.md`，提取"今日核心判断"全部内容
-3. 读取 `/workspace/rules.md` —— 了解现有规则库（含波浪分析规则）
-4. 读取现有月度总结（如果文件存在）：`/workspace/report/monthly/${MONTH}_monthly_report.md`
-5. 读取现有年度总结（如果文件存在）：`/workspace/report/yearly/${YEAR}_yearly_report.md`
+2. 读取今日晨报（按日期路径直接读取）：
+   - `/workspace/report/$DATE/morning_report_$DATE.md`
+   - 提取"今日核心判断"全部内容
+3. 读取今日 day_summary（晨报版）：
+   - `/workspace/report/$DATE/day_summary_$DATE.md`
+4. 读取 `/workspace/rules.md` —— 了解现有规则库（含波浪分析规则）
+5. 读取现有月度总结（如果文件存在）：
+   - 先查：`/workspace/report/monthly/${MONTH}_monthly_report.md`
+   - 再查：`/workspace/report/history/${YEAR}/${MONTH:0:4}年${MONTH:4:2}月/${MONTH}_monthly_report.md`（历史归档位置）
+6. 读取现有年度总结（如果文件存在）：
+   - 先查：`/workspace/report/yearly/${YEAR}_yearly_report.md`
+   - 再查：`/workspace/report/history/${YEAR}/${YEAR}_yearly_report.md`（历史归档位置）
 
 ---
 
@@ -216,10 +229,37 @@
 
 ---
 
-## 步骤5：本地保存晚报 + Git 提交
+## 步骤5：本地保存晚报 + 更新当日交易信息动态（完整版）+ Git 提交
 
 1. 保存晚报为：`/workspace/report/$DATE/evening_report_$DATE.md`
-2. 执行 git 提交推送：
+
+2. 更新当日交易信息动态（完整版）：
+   读取晨报版 day_summary，补充晚报精华和复盘总结部分。
+   文件路径：`/workspace/report/$DATE/day_summary_$DATE.md`
+   完整结构：
+   ```markdown
+   # $DATE_CN 交易信息动态
+
+   ## 一、晨报精华
+   ### 核心判断
+   ### 板块预判
+   ### 策略建议
+   ### 风险提示
+   ### 波浪分析参考
+
+   ## 二、晚报精华
+   ### 市场表现
+   ### 热点板块
+   ### 波浪分析结论
+   ### 资金面
+
+   ## 三、今日复盘与经验总结
+   ### 准确率评估
+   ### 偏差与教训
+   ### 新规则发现
+   ```
+
+3. 执行 git 提交推送：
    ```bash
    cd /workspace
    chmod +x script/auto_commit.sh
@@ -228,13 +268,19 @@
 
 ---
 
-## 步骤6：生成月度总结
+## 步骤6：生成/更新月度总结
 
-基于今日晚报数据 + 当月已有数据，更新月度总结。
+**更新时机**：每次晚报生成后都更新月度总结。
 
-**文件路径：** `/workspace/report/monthly/${MONTH}_monthly_report.md`
+**数据源**：当月所有 day_summary 文件，从两个位置收集：
+- `report/` 下当月的日期目录
+- `report/history/${YEAR}/${MONTH_CN}/` 下当月的日期目录
 
-**结构：**
+**文件路径（两份，内容相同）**：
+- `/workspace/report/monthly/${MONTH}_monthly_report.md`
+- `/workspace/report/history/${YEAR}/${MONTH_CN}/${MONTH}_monthly_report.md`
+
+**月度总结结构：**
 ```markdown
 # $MONTH_CN 月度复盘总结
 
@@ -276,20 +322,26 @@
 2. XXX
 ```
 
-**更新规则：**
-- 如果月度总结文件已存在，读取后追加/更新今日数据
-- 不存在则新建
+**更新规则**：
+- 收集当月所有 day_summary 文件，汇总更新
 - 核心数据汇总表按日期倒序排列（最新的在上）
+- 两个位置各存一份，内容完全相同
 
 ---
 
-## 步骤7：生成年度总结
+## 步骤7：生成/更新年度总结
 
-基于今日数据 + 当年已有数据，更新年度总结。
+**更新时机**：每月第一个交易日的晚报任务执行后更新（汇总到上个月为止的数据）。
 
-**文件路径：** `/workspace/report/yearly/${YEAR}_yearly_report.md`
+**数据源**：当年各月的月度总结报告，从两个位置收集：
+- `report/monthly/` 下当年的月度总结
+- `report/history/${YEAR}/` 下各月的月度总结
 
-**结构：**
+**文件路径（两份，内容相同）**：
+- `/workspace/report/yearly/${YEAR}_yearly_report.md`
+- `/workspace/report/history/${YEAR}/${YEAR}_yearly_report.md`
+
+**年度总结结构：**
 ```markdown
 # $YEAR_CN 年度复盘总结
 
@@ -332,9 +384,10 @@
 ...
 ```
 
-**更新规则：**
-- 如果年度总结文件已存在，读取后追加/更新今日数据
-- 不存在则新建
+**更新规则**：
+- 如果不是当月第一个交易日，跳过此步骤
+- 如果是当月第一个交易日，汇总当年所有已完成月份的月度总结，生成/更新年度总结
+- 两个位置各存一份，内容完全相同
 
 ---
 
@@ -359,80 +412,71 @@
    lark-cli docs +update --doc <晚报obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/$DATE/evening_report_$DATE.md" --as user --format json
    ```
 
-### 8.3 更新日期父节点内容（overwrite）
+### 8.3 更新日期父节点内容（从 day_summary 文件读取）
 
-将完整日期页内容（晨报精华 + 晚报精华 + 波浪分析要点 + 复盘总结）写入临时文件 `/workspace/_day_full.md`，然后：
+直接读取本地完整的 day_summary 文件，overwrite 更新：
 ```bash
-lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-format markdown --content "@./_day_full.md" --as user --format json
-rm -f /workspace/_day_full.md
+lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/$DATE/day_summary_$DATE.md" --as user --format json
 ```
 
-日期页内容结构：
-```markdown
-# $DATE_CN 交易信息动态
+### 8.4 处理首页月度总结节点
 
-## 一、晨报精华
-### 核心判断
-### 板块预判
-### 策略建议
-### 风险提示
-### 波浪分析参考
+1. 列出首页子节点，查找 `title == "$MONTH_CN月度总结"` 的节点
+2. 存在则复用，不存在则创建（创建到首页下）
+3. 写入月度总结内容（overwrite）：
+   ```bash
+   lark-cli docs +update --doc <月度总结obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/monthly/${MONTH}_monthly_report.md" --as user --format json
+   ```
 
-## 二、晚报精华
-### 市场表现
-### 热点板块
-### 波浪分析结论
-### 资金面
-
-## 三、今日复盘与经验总结
-### 准确率评估
-### 偏差与教训
-### 新规则发现
-```
-
-### 8.4 处理年度节点（历史报告 → 年节点）
+### 8.5 处理历史报告 → 年节点
 
 1. 列出历史报告子节点
 2. 查找 `title == "$YEAR_CN"` 的年节点
 3. 存在则复用，不存在则创建（创建到历史报告下）
+4. 年节点内容即年度总结，overwrite 更新：
+   ```bash
+   lark-cli docs +update --doc <年节点obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/yearly/${YEAR}_yearly_report.md" --as user --format json
+   ```
 
-### 8.5 处理月度节点（历史报告 → 年节点 → 月节点）
+### 8.6 处理历史报告 → 年节点 → 月节点
 
 1. 列出年节点的子节点
 2. 查找 `title == "$MONTH_CN"` 的月节点
 3. 存在则复用，不存在则创建（创建到年节点下）
+4. 月节点内容即月度总结，overwrite 更新：
+   ```bash
+   lark-cli docs +update --doc <月节点obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/monthly/${MONTH}_monthly_report.md" --as user --format json
+   ```
 
-### 8.6 更新月度节点内容（overwrite）
-```bash
-lark-cli docs +update --doc <month_obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/monthly/${MONTH}_monthly_report.md" --as user --format json
-```
-
-### 8.7 更新年度节点内容（overwrite）
-```bash
-lark-cli docs +update --doc <year_obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/yearly/${YEAR}_yearly_report.md" --as user --format json
-```
+> 注意：年度总结节点只有在每月第一个交易日才更新内容，其余时间跳过。
 
 ---
 
-## 步骤9：归档清理（首页只保留最近7个交易日）
+## 步骤9：归档清理
 
-1. 重新列出首页所有子节点
-2. 筛选出日期节点（title 匹配"YYYY年MM月DD日 交易信息动态"格式），排除"历史报告"
-3. 按日期从新到旧排序
-4. 如果日期节点数量 > 7：
-   - 超出部分（最旧的那些）逐个归档
-   - 对每个要归档的节点：
-     1. 从标题提取年份和月份
-     2. 确保历史报告下有对应年节点和月节点（不存在则创建）
-     3. 移动日期节点到对应月节点下：
+### 归档规则
+- **平时**：`report/` 下保留最近7个交易日的日期目录
+- **当月第一个交易日**：上个月的所有日报全部归档到 `history/YYYY/MM/` 下，`report/` 下只剩今日
+
+### 执行步骤
+
+1. **如果今日是当月第一个交易日**：
+   - 遍历 `report/` 下所有日期目录（排除 history、monthly、yearly）
+   - 将所有上个月的日期目录移动到 `history/YYYY/MM/` 下
+   - 飞书端：首页下上个月的所有日期节点，移动到历史报告 → 对应年节点 → 对应月节点下
+   - 注意：首页的月度总结节点保留不动（仍挂在首页）
+
+2. **日常归档（保留7个交易日）**：
+   - 列出 `report/` 下所有日期目录（排除 history、monthly、yearly）
+   - 按日期从新到旧排序
+   - 如果数量 > 7，超出部分（最旧的）逐个归档：
+     1. 提取年月 YYYY MM
+     2. 本地移动：`mkdir -p /workspace/report/history/YYYY/MM && mv /workspace/report/$OLD_DATE /workspace/report/history/YYYY/MM/`
+     3. 飞书移动：
         ```bash
         lark-cli wiki +move --node-token <旧日期node_token> --target-parent-token <对应月node_token> --as user --format json
         ```
-     4. 同时本地归档：
-        ```bash
-        mkdir -p /workspace/report/history/$Y/$M
-        mv /workspace/report/$OLD_DATE /workspace/report/history/$Y/$M/
-        ```
+     4. 确保历史报告下有对应年节点和月节点（不存在则创建）
 
 ---
 

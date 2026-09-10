@@ -5,9 +5,14 @@
 
 ## 文件结构
 ```
-├── prompt/                     # 提示词目录
-│   ├── morning_report_prompt.txt  # 晨报提示词（核心）
-│   └── evening_report_prompt.txt  # 晚报提示词（含复盘模块）
+├── config/                     # 配置文件目录（敏感信息，不提交）
+│   ├── feishu_config.env.example  # 飞书配置示例模板
+│   └── feishu_config.env          # 飞书配置（实际使用，需自行创建）
+├── prompt/                     # 提示词与任务指南
+│   ├── morning_report_prompt.txt  # 晨报内容提示词
+│   ├── evening_report_prompt.txt  # 晚报内容提示词（含复盘+波浪分析）
+│   ├── morning_task_guide.md     # 晨报任务执行手册（完整流程）
+│   └── evening_task_guide.md     # 晚报任务执行手册（完整流程）
 ├── script/                     # 脚本目录
 │   └── auto_commit.sh            # 自动提交脚本
 ├── AGENTS.md                   # AI代理使用指南
@@ -16,18 +21,28 @@
 └── report/                     # 报告目录
     ├── YYYYMMDD/               # 近期日报（首页保留最近7个交易日）
     │   ├── morning_report_YYYYMMDD.md
-    │   └── evening_report_YYYYMMDD.md
-    ├── monthly/                # 月度复盘总结
+    │   ├── evening_report_YYYYMMDD.md
+    │   └── day_summary_YYYYMMDD.md   # 当日交易信息动态（日期节点内容）
+    ├── monthly/                # 月度复盘总结（活跃月份）
     │   └── YYYYMM_monthly_report.md
-    ├── yearly/                 # 年度复盘总结
+    ├── yearly/                 # 年度复盘总结（当前年份）
     │   └── YYYY_yearly_report.md
-    └── history/                # 历史归档（超过7天的日报）
+    └── history/                # 历史归档
         └── YYYY/
-            └── MM/
+            ├── YYYY_yearly_report.md      # 年度总结（历史版）
+            └── M月/
+                ├── YYYYMM_monthly_report.md  # 月度总结（历史版）
                 └── YYYYMMDD/
                     ├── morning_report_YYYYMMDD.md
-                    └── evening_report_YYYYMMDD.md
+                    ├── evening_report_YYYYMMDD.md
+                    └── day_summary_YYYYMMDD.md
 ```
+
+### 归档规则
+- **平时**：`report/` 下保留最近7个交易日的日期目录
+- **当月第一个交易日**：上个月的所有日报全部归档到 `history/YYYY/MM/` 下，`report/` 下只保留当月
+- **月度总结**：`monthly/` 和 `history/YYYY/MM/` 各存一份
+- **年度总结**：`yearly/` 和 `history/YYYY/` 各存一份
 
 ## 核心功能
 
@@ -65,19 +80,24 @@
 报告生成后自动同步到飞书知识库，目录结构：
 ```
 首页
+├── YYYY年M月月度总结            ← 当月月度总结（方便查看）
 ├── 近期日报（最近7个交易日）
-│   └── YYYY年MM月DD日 交易信息动态
+│   └── YYYY年MM月DD日 交易信息动态   ← 内容来自 day_summary 文件
 │       ├── A股晨报
 │       └── A股晚报
 └── 历史报告
-    └── YYYY年（年度总结）
-        └── YYYY年M月（月度总结）
+    └── YYYY年                      ← 节点内容即年度总结
+        └── YYYY年M月               ← 节点内容即月度总结
             └── YYYY年MM月DD日 交易信息动态
+                ├── A股晨报
+                └── A股晚报
 ```
 
-- 日期父节点包含当日精华摘要（晨报+晚报+复盘）
-- 月/年节点包含对应周期的复盘总结
+- 日期父节点内容来自 `day_summary_YYYYMMDD.md`（晨报生成后写半成品，晚报生成后更新为完整版）
+- 首页挂"当月月度总结"节点，方便快速查看
+- 历史报告的年节点内容即年度总结，月节点内容即月度总结
 - 超过7天的日报自动归档到历史报告的年/月目录下
+- 当月第一个交易日：上个月日报全部归档
 
 ### 飞书消息通知
 每次任务完成后，通过飞书私聊推送通知，包含核心数据摘要和报告链接。

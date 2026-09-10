@@ -13,13 +13,15 @@
 ### 晨报生成流程
 ```
 1. 读取 prompt/morning_report_prompt.txt
-2. 读取上一交易日的晚报文件（提取复盘要点）
+2. 按日期读取上一交易日的晚报（report/ 或 history/ 目录下）
 3. 收集隔夜海外市场动态（昨日收盘后至今）
 4. 分析今日关注事项
 5. 形成今日核心判断（必须结构化）
 6. 制定投资策略建议（必须具体可执行）
 7. 保存为 report/YYYYMMDD/morning_report_YYYYMMDD.md
-8. 执行 ./script/auto_commit.sh 晨报
+8. 生成当日交易信息动态（晨报版）：report/YYYYMMDD/day_summary_YYYYMMDD.md
+9. 执行 ./script/auto_commit.sh 晨报
+10. 归档清理（当月第一个交易日特殊处理：上月全部归档）
 ```
 
 ### 晚报生成流程
@@ -34,7 +36,11 @@
 8. 分析偏差根因
 9. 沉淀为检查清单和规则
 10. 保存为 report/YYYYMMDD/evening_report_YYYYMMDD.md
-11. 执行 ./script/auto_commit.sh 晚报
+11. 更新当日交易信息动态（完整版）：report/YYYYMMDD/day_summary_YYYYMMDD.md
+12. 生成/更新月度总结（每次更新，双份存储：monthly/ 和 history/YYYY/MM/）
+13. 生成/更新年度总结（每月第一个交易日更新，双份存储：yearly/ 和 history/YYYY/）
+14. 执行 ./script/auto_commit.sh 晚报
+15. 归档清理（当月第一个交易日特殊处理：上月全部归档）
 ```
 
 ## 输出格式要求
