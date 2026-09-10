@@ -14,9 +14,19 @@
 ├── README.md                   # 项目说明文档
 ├── rules.md                    # 规则库（自动更新）
 └── report/                     # 报告目录
-    └── YYYYMMDD/               # 日期文件夹（按日期组织）
-        ├── morning_report_YYYYMMDD.md  # 晨报文件
-        └── evening_report_YYYYMMDD.md  # 晚报文件
+    ├── YYYYMMDD/               # 近期日报（首页保留最近7个交易日）
+    │   ├── morning_report_YYYYMMDD.md
+    │   └── evening_report_YYYYMMDD.md
+    ├── monthly/                # 月度复盘总结
+    │   └── YYYYMM_monthly_report.md
+    ├── yearly/                 # 年度复盘总结
+    │   └── YYYY_yearly_report.md
+    └── history/                # 历史归档（超过7天的日报）
+        └── YYYY/
+            └── MM/
+                └── YYYYMMDD/
+                    ├── morning_report_YYYYMMDD.md
+                    └── evening_report_YYYYMMDD.md
 ```
 
 ## 核心功能
@@ -45,6 +55,27 @@
 1. 从晚报中提取新规则（格式：`###类别 规则内容`）
 2. 追加到 `rules.md` 对应章节
 3. 自动提交规则库更新
+
+### 飞书知识库同步
+报告生成后自动同步到飞书知识库，目录结构：
+```
+首页
+├── 近期日报（最近7个交易日）
+│   └── YYYY年MM月DD日 交易信息动态
+│       ├── A股晨报
+│       └── A股晚报
+└── 历史报告
+    └── YYYY年（年度总结）
+        └── YYYY年M月（月度总结）
+            └── YYYY年MM月DD日 交易信息动态
+```
+
+- 日期父节点包含当日精华摘要（晨报+晚报+复盘）
+- 月/年节点包含对应周期的复盘总结
+- 超过7天的日报自动归档到历史报告的年/月目录下
+
+### 飞书消息通知
+每次任务完成后，通过飞书私聊推送通知，包含核心数据摘要和报告链接。
 
 ## 快速开始
 
