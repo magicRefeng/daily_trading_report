@@ -1,6 +1,9 @@
 # 临时上传目录
 .uploads/
 
+# 系统截图缓存
+.screenshots/
+
 # 临时文件
 _*.md
 _*.tmp
