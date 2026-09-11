@@ -14,11 +14,36 @@
 
 ## 飞书配置
 优先从系统环境变量读取，本地开发环境可从 `config/feishu_config.env` 读取：
+- 应用凭证：`FEISHU_APP_ID`、`FEISHU_APP_SECRET`
 - 首页节点 token：`FEISHU_HOME_NODE_TOKEN`
 - 历史报告节点 token：`FEISHU_HISTORY_NODE_TOKEN`
 - 知识库 space_id：`FEISHU_SPACE_ID`
 - 用户 open_id：`FEISHU_USER_OPEN_ID`
 - 知识库首页链接：`FEISHU_HOME_URL`
+
+## 飞书 API 工具
+所有飞书操作通过 `script/feishu_api.py` 脚本完成，使用方法：
+```bash
+# 列出节点
+python3 script/feishu_api.py list-nodes --space-id $FEISHU_SPACE_ID --parent-node-token $FEISHU_HOME_NODE_TOKEN
+
+# 创建节点
+python3 script/feishu_api.py create-node --space-id $FEISHU_SPACE_ID --parent-node-token <父token> --title "标题"
+
+# 移动节点
+python3 script/feishu_api.py move-node --space-id $FEISHU_SPACE_ID --node-token <节点token> --target-parent-token <目标token>
+
+# 更新文档内容（用Markdown文件全量替换）
+python3 script/feishu_api.py update-doc --document-id <文档obj_token> --file <本地md文件路径>
+
+# 发送消息
+python3 script/feishu_api.py send-msg --open-id $FEISHU_USER_OPEN_ID --text "消息内容"
+```
+
+> 注意：知识库节点的 `node_token` 和文档本身的 `obj_token` 是两个不同的 token。
+> - 创建节点返回的 node 里同时有 `node_token` 和 `obj_token`
+> - 更新文档内容用 `obj_token`
+> - 移动节点、列节点用 `node_token`
 
 ## 日期变量
 - `DATE` = YYYYMMDD（今日，如 20260911）
@@ -57,7 +82,7 @@
 1. 获取当前北京时间，设置上述日期变量
 2. 判断今日是否为交易日（周一至周五，节假日跳过）
 3. 加载飞书配置：
-   - 优先检查系统环境变量是否已设置 `FEISHU_HOME_NODE_TOKEN`
+   - 优先检查系统环境变量是否已设置 `FEISHU_APP_ID`
    - 若环境变量不存在，从本地配置文件读取：
      ```bash
      [ -f config/feishu_config.env ] && source config/feishu_config.env
@@ -197,28 +222,32 @@
 
 ### 6.1 处理日期父节点
 
-1. 列出首页子节点（使用配置中的 space_id 和首页 node token）：
+1. 列出首页子节点：
    ```bash
-   lark-cli wiki +node-list --space-id $FEISHU_SPACE_ID --parent-node-token $FEISHU_HOME_NODE_TOKEN --page-all --as user --format json
+   python3 script/feishu_api.py list-nodes --space-id $FEISHU_SPACE_ID --parent-node-token $FEISHU_HOME_NODE_TOKEN
    ```
-2. 查找 `title == "$DATE_CN 交易信息动态"` 的节点
-3. 存在则复用，不存在则创建到首页下
+2. 从返回的 JSON 中查找 `title == "$DATE_CN 交易信息动态"` 的节点
+3. 存在则记录其 `node_token` 和 `obj_token`；不存在则创建：
+   ```bash
+   python3 script/feishu_api.py create-node --space-id $FEISHU_SPACE_ID --parent-node-token $FEISHU_HOME_NODE_TOKEN --title "$DATE_CN 交易信息动态"
+   ```
+   记录返回节点的 `node_token` 和 `obj_token`
 
 ### 6.2 处理晨报子节点
 
-1. 列出日期父节点的子节点
+1. 列出日期父节点的子节点（使用日期父节点的 node_token）
 2. 查找 `title == "A股晨报"` 的子节点
-3. 存在则复用，不存在则创建
-4. 将晨报内容 overwrite 更新：
+3. 存在则复用，不存在则创建到日期父节点下
+4. 将晨报内容全量更新到文档（用 obj_token，不是 node_token）：
    ```bash
-   lark-cli docs +update --doc <晨报obj_token> --command overwrite --doc-format markdown --content "@report/$DATE/morning_report_$DATE.md" --as user --format json
+   python3 script/feishu_api.py update-doc --document-id <晨报obj_token> --file "report/$DATE/morning_report_$DATE.md"
    ```
 
 ### 6.3 更新日期父节点内容（从 day_summary 文件读取）
 
-直接读取本地 `day_summary_$DATE.md` 文件，overwrite 更新到日期父节点：
+直接读取本地 `day_summary_$DATE.md` 文件，全量更新到日期父节点的文档：
 ```bash
-lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-format markdown --content "@report/$DATE/day_summary_$DATE.md" --as user --format json
+python3 script/feishu_api.py update-doc --document-id <日期父obj_token> --file "report/$DATE/day_summary_$DATE.md"
 ```
 
 ---
@@ -243,10 +272,12 @@ lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-forma
      1. 提取年月 YYYY MM
      2. 本地移动：`mkdir -p report/history/YYYY/MM && mv report/$OLD_DATE report/history/YYYY/MM/`
      3. 飞书移动：
-        ```bash
-        lark-cli wiki +move --node-token <旧日期node_token> --target-parent-token <对应月node_token> --as user --format json
-        ```
-     4. 确保历史报告下有对应年节点和月节点（不存在则创建）
+        - 先确认历史报告下存在对应年节点（不存在则创建）
+        - 年节点下存在对应月节点（不存在则创建）
+        - 移动节点：
+          ```bash
+          python3 script/feishu_api.py move-node --space-id $FEISHU_SPACE_ID --node-token <旧日期node_token> --target-parent-token <对应月node_token>
+          ```
 
 ---
 
@@ -268,7 +299,7 @@ GitHub仓库：https://github.com/magicRefeng/daily_trading_report
 
 发送命令：
 ```bash
-lark-cli im +messages-send --user-id $FEISHU_USER_OPEN_ID --as user --markdown $'消息内容'
+python3 script/feishu_api.py send-msg --open-id $FEISHU_USER_OPEN_ID --text '消息内容'
 ```
 
 ---
