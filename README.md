@@ -14,7 +14,8 @@
 │   ├── morning_task_guide.md     # 晨报任务执行手册（完整流程）
 │   └── evening_task_guide.md     # 晚报任务执行手册（完整流程）
 ├── script/                     # 脚本目录
-│   └── auto_commit.sh            # 自动提交脚本
+│   ├── auto_commit.sh            # 自动提交脚本
+│   └── feishu_api.py             # 飞书API工具脚本（自建应用直连）
 ├── AGENTS.md                   # AI代理使用指南
 ├── README.md                   # 项目说明文档
 ├── rules.md                    # 规则库（自动更新）
@@ -101,6 +102,26 @@
 
 ### 飞书消息通知
 每次任务完成后，通过飞书私聊推送通知，包含核心数据摘要和报告链接。
+通知由飞书自建应用机器人发送，需先在飞书中与机器人建立会话。
+
+### 飞书 API 工具脚本
+`script/feishu_api.py` 封装了飞书自建应用的常用 API 操作，使用时通过环境变量或配置文件读取凭证：
+```bash
+# 列出知识库节点
+python3 script/feishu_api.py list-nodes --space-id $FEISHU_SPACE_ID --parent-node-token $FEISHU_HOME_NODE_TOKEN
+
+# 创建节点
+python3 script/feishu_api.py create-node --space-id $FEISHU_SPACE_ID --parent-node-token <父token> --title "标题"
+
+# 移动节点
+python3 script/feishu_api.py move-node --space-id $FEISHU_SPACE_ID --node-token <节点token> --target-parent-token <目标token>
+
+# 更新文档内容（用Markdown文件全量替换）
+python3 script/feishu_api.py update-doc --document-id <文档obj_token> --file <本地md文件路径>
+
+# 发送消息
+python3 script/feishu_api.py send-msg --open-id $FEISHU_USER_OPEN_ID --text "消息内容"
+```
 
 ## 快速开始
 
@@ -110,15 +131,19 @@
 # 复制示例配置文件
 cp config/feishu_config.env.example config/feishu_config.env
 
-# 编辑配置，填入你自己的飞书知识库和用户信息
+# 编辑配置，填入以下信息：
+# - FEISHU_APP_ID：飞书自建应用 App ID
+# - FEISHU_APP_SECRET：飞书自建应用 App Secret
 # - FEISHU_SPACE_ID：知识库 space_id
 # - FEISHU_HOME_NODE_TOKEN：首页节点 token
 # - FEISHU_HISTORY_NODE_TOKEN：历史报告节点 token
-# - FEISHU_USER_OPEN_ID：用户 open_id（用于消息通知）
+# - FEISHU_USER_OPEN_ID：用户 open_id（自建应用下的，用于消息通知）
 # - FEISHU_HOME_URL：知识库首页链接
+# - GITHUB_TOKEN：GitHub Personal Access Token（用于代码拉取/推送）
 ```
 
 > 注意：`config/feishu_config.env` 已加入 `.gitignore`，不会被提交到仓库，请勿将真实 token 泄露。
+> 飞书自建应用需开启「机器人」能力并添加知识库读写、消息发送权限。
 
 ### 2. 生成晨报
 ```bash

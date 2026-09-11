@@ -12,7 +12,8 @@
 
 ### 晨报生成流程
 ```
-1. 读取 prompt/morning_report_prompt.txt
+0. 从 GitHub 拉取代码仓库（定时任务在空沙盒中运行，必须先拉取）
+1. 读取 prompt/morning_report_prompt.txt 和 prompt/morning_task_guide.md
 2. 按日期读取上一交易日的晚报（report/ 或 history/ 目录下）
 3. 收集隔夜海外市场动态（昨日收盘后至今）
 4. 分析今日关注事项
@@ -21,12 +22,15 @@
 7. 保存为 report/YYYYMMDD/morning_report_YYYYMMDD.md
 8. 生成当日交易信息动态（晨报版）：report/YYYYMMDD/day_summary_YYYYMMDD.md
 9. 执行 ./script/auto_commit.sh 晨报
-10. 归档清理（当月第一个交易日特殊处理：上月全部归档）
+10. 同步到飞书知识库（通过 script/feishu_api.py）
+11. 发送飞书消息通知（通过 script/feishu_api.py send-msg）
+12. 归档清理（当月第一个交易日特殊处理：上月全部归档）
 ```
 
 ### 晚报生成流程
 ```
-1. 读取 prompt/evening_report_prompt.txt
+0. 从 GitHub 拉取代码仓库（定时任务在空沙盒中运行，必须先拉取）
+1. 读取 prompt/evening_report_prompt.txt 和 prompt/evening_task_guide.md
 2. 收集当日市场数据
 3. 进行波浪理论多周期分析（月K、周K、日K、60分、30分）
 4. 绘制波浪结构示意图
@@ -40,7 +44,9 @@
 12. 生成/更新月度总结（每次更新，双份存储：monthly/ 和 history/YYYY/MM/）
 13. 生成/更新年度总结（每月第一个交易日更新，双份存储：yearly/ 和 history/YYYY/）
 14. 执行 ./script/auto_commit.sh 晚报
-15. 归档清理（当月第一个交易日特殊处理：上月全部归档）
+15. 同步到飞书知识库（通过 script/feishu_api.py）
+16. 发送飞书消息通知（通过 script/feishu_api.py send-msg）
+17. 归档清理（当月第一个交易日特殊处理：上月全部归档）
 ```
 
 ## 输出格式要求
@@ -201,6 +207,9 @@
 2. **市场异常波动**：在风险提示中特别说明，调整投资建议
 3. **政策突发**：及时更新分析逻辑，必要时发布补充说明
 4. **技术分析局限**：在复盘中记录，更新技术分析方法
+5. **飞书API调用失败**：检查环境变量是否正确设置，检查应用权限是否齐全
+6. **GitHub推送失败**：检查 GITHUB_TOKEN 是否有效，网络是否正常
+7. **飞书 open_id 不匹配**：不同应用下同一用户的 open_id 不同，必须使用自建应用下的 open_id
 
 ### 汇报机制
 - 如遇重大市场异常，应在风险提示中特别标注
