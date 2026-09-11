@@ -93,6 +93,7 @@ def create_wiki_node(space_id, parent_node_token, title, obj_type="docx"):
     token = get_tenant_token()
     data = {
         "obj_type": obj_type,
+        "node_type": "origin",
         "parent_node_token": parent_node_token,
         "title": title,
     }
@@ -160,38 +161,63 @@ def delete_doc_block(document_id, block_id):
 def convert_markdown_to_blocks(markdown_text):
     """将 Markdown 转换为飞书文档块结构"""
     token = get_tenant_token()
-    data = {"content": markdown_text, "content_type": 1}  # 1 = markdown
-    result = api_call("POST", "/docx/v1/documents/convert_document_block", token=token, data=data)
+    data = {"content": markdown_text, "content_type": "markdown"}
+    result = api_call("POST", "/docx/v1/documents/blocks/convert", token=token, data=data)
     if result.get("code") != 0:
         raise Exception(f"转换Markdown失败: {result}")
     return result.get("data", {}).get("blocks", [])
 
 
 def clean_table_blocks(blocks):
-    """清理表格块的 merge_info 字段（飞书API要求）"""
+    """清理表格块的额外字段（飞书创建API不接受这些字段）"""
     for block in blocks:
+        if not isinstance(block, dict):
+            continue
         if block.get("block_type") == 31:  # table
             table = block.get("table", {})
-            table.pop("merge_info", None)
-        # 递归清理子块
+            if isinstance(table, dict):
+                # 移除 cells（API不接受）
+                table.pop("cells", None)
+                # 移除 property.merge_info
+                prop = table.get("property", {})
+                if isinstance(prop, dict):
+                    prop.pop("merge_info", None)
+        # 递归清理子块（children 可能是字符串 ID 列表或对象列表）
         children = block.get("children", [])
-        if children:
+        if children and isinstance(children[0], dict):
             clean_table_blocks(children)
 
 
 def insert_blocks_to_doc(document_id, parent_block_id, blocks, index=0):
-    """批量插入块到文档"""
+    """使用嵌套块API插入文档内容（支持扁平结构）"""
     token = get_tenant_token()
     clean_table_blocks(blocks)
+
+    # 收集所有被引用为子块的 block_id（这些不是顶层块）
+    child_ids = set()
+    for b in blocks:
+        for child_id in b.get("children", []):
+            if isinstance(child_id, str):
+                child_ids.add(child_id)
+
+    # 顶层块 = 不被任何块引用为子块的块
+    top_level_ids = [b["block_id"] for b in blocks if b.get("block_id") and b.get("block_id") not in child_ids]
+
+    # 清理所有块的 parent_id（API不接受此字段）
+    for b in blocks:
+        b.pop("parent_id", None)
+
+    # 一次性发送所有块
     data = {
         "index": index,
-        "children": blocks,
+        "children_id": top_level_ids,
+        "descendants": blocks,
     }
-    result = api_call("POST", f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/children",
-                      token=token, data=data)
+    result = api_call("POST", f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/descendant",
+                      token=token, data=data, params={"document_revision_id": "-1"})
     if result.get("code") != 0:
         raise Exception(f"插入块失败: {result}")
-    return result.get("data", {})
+    return True
 
 
 def update_doc_content(document_id, markdown_text):
