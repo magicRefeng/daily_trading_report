@@ -6,10 +6,14 @@
 生成今日A股晨报，生成当日交易信息动态（晨报版），保存到本地并提交git推送到GitHub，同步到飞书知识库（按年/月层级归档），最后发送飞书消息通知。
 
 ## 工作目录
-`/workspace`
+`/workspace/daily_trading_report`
+
+## 代码仓库
+- GitHub 仓库地址：`https://github.com/magicRefeng/daily_trading_report.git`
+- GitHub Token：从环境变量 `GITHUB_TOKEN` 读取
 
 ## 飞书配置
-从 `config/feishu_config.env` 读取以下配置：
+优先从系统环境变量读取，本地开发环境可从 `config/feishu_config.env` 读取：
 - 首页节点 token：`FEISHU_HOME_NODE_TOKEN`
 - 历史报告节点 token：`FEISHU_HISTORY_NODE_TOKEN`
 - 知识库 space_id：`FEISHU_SPACE_ID`
@@ -27,37 +31,60 @@
 
 ---
 
+## 步骤0：拉取代码仓库
+
+定时任务在空沙盒中运行，必须先从 GitHub 拉取代码。
+
+1. 切换到工作目录父级：
+   ```bash
+   cd /workspace
+   ```
+2. 如果仓库目录不存在，clone 仓库：
+   ```bash
+   git clone https://$GITHUB_TOKEN@github.com/magicRefeng/daily_trading_report.git
+   ```
+3. 进入仓库目录并拉取最新代码：
+   ```bash
+   cd /workspace/daily_trading_report
+   git pull
+   ```
+4. 设置工作目录为仓库目录，后续所有操作均在此目录下执行
+
+---
+
 ## 步骤1：前置检查
 
 1. 获取当前北京时间，设置上述日期变量
 2. 判断今日是否为交易日（周一至周五，节假日跳过）
-3. 读取飞书配置文件：
-   ```bash
-   source /workspace/config/feishu_config.env
-   ```
+3. 加载飞书配置：
+   - 优先检查系统环境变量是否已设置 `FEISHU_HOME_NODE_TOKEN`
+   - 若环境变量不存在，从本地配置文件读取：
+     ```bash
+     [ -f config/feishu_config.env ] && source config/feishu_config.env
+     ```
 4. 计算上一个交易日日期 `PREV_DATE`（往前倒推，跳过周末）
 5. 判断今日是否为当月第一个交易日：
    - 检查 `report/` 目录下是否存在当月日期的目录
    - 若不存在，则今日为当月第一个交易日
 6. 创建目录（如不存在）：
    ```bash
-   mkdir -p /workspace/report/$DATE
-   mkdir -p /workspace/report/history
+   mkdir -p report/$DATE
+   mkdir -p report/history
    ```
 
 ---
 
 ## 步骤2：读取文件
 
-1. 读取 `/workspace/prompt/morning_report_prompt.txt` —— 晨报内容格式模板
+1. 读取 `prompt/morning_report_prompt.txt` —— 晨报内容格式模板
 2. 读取上一交易日的晚报（按日期查找，不遍历）：
-   - 先查：`/workspace/report/$PREV_DATE/evening_report_$PREV_DATE.md`
-   - 若不存在，查：`/workspace/report/history/${PREV_YEAR}/${PREV_MONTH}/$PREV_DATE/evening_report_$PREV_DATE.md`
+   - 先查：`report/$PREV_DATE/evening_report_$PREV_DATE.md`
+   - 若不存在，查：`report/history/${PREV_YEAR}/${PREV_MONTH}/$PREV_DATE/evening_report_$PREV_DATE.md`
    - 提取内容：
      - 复盘要点（准确率、偏差分析）
      - 波浪理论分析结论（当前波浪位置、关键点位）
      - 新发现的规则
-3. 读取 `/workspace/rules.md` —— 了解现有规则库
+3. 读取 `rules.md` —— 了解现有规则库
 
 ---
 
@@ -124,10 +151,10 @@
 
 ## 步骤5：本地保存 + 生成当日交易信息动态（晨报版）+ Git 提交
 
-1. 保存晨报为：`/workspace/report/$DATE/morning_report_$DATE.md`
+1. 保存晨报为：`report/$DATE/morning_report_$DATE.md`
 
 2. 生成当日交易信息动态（晨报版半成品）：
-   文件路径：`/workspace/report/$DATE/day_summary_$DATE.md`
+   文件路径：`report/$DATE/day_summary_$DATE.md`
    内容结构：
    ```markdown
    # $DATE_CN 交易信息动态
@@ -158,9 +185,10 @@
 
 3. 执行 git 提交推送：
    ```bash
-   cd /workspace
    chmod +x script/auto_commit.sh
    ./script/auto_commit.sh 晨报
+   # 使用token推送
+   git push https://$GITHUB_TOKEN@github.com/magicRefeng/daily_trading_report.git HEAD:main
    ```
 
 ---
@@ -183,14 +211,14 @@
 3. 存在则复用，不存在则创建
 4. 将晨报内容 overwrite 更新：
    ```bash
-   lark-cli docs +update --doc <晨报obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/$DATE/morning_report_$DATE.md" --as user --format json
+   lark-cli docs +update --doc <晨报obj_token> --command overwrite --doc-format markdown --content "@report/$DATE/morning_report_$DATE.md" --as user --format json
    ```
 
 ### 6.3 更新日期父节点内容（从 day_summary 文件读取）
 
 直接读取本地 `day_summary_$DATE.md` 文件，overwrite 更新到日期父节点：
 ```bash
-lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-format markdown --content "@/workspace/report/$DATE/day_summary_$DATE.md" --as user --format json
+lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-format markdown --content "@report/$DATE/day_summary_$DATE.md" --as user --format json
 ```
 
 ---
@@ -213,7 +241,7 @@ lark-cli docs +update --doc <日期父obj_token> --command overwrite --doc-forma
    - 按日期从新到旧排序
    - 如果数量 > 7，超出部分（最旧的）逐个归档：
      1. 提取年月 YYYY MM
-     2. 本地移动：`mkdir -p /workspace/report/history/YYYY/MM && mv /workspace/report/$OLD_DATE /workspace/report/history/YYYY/MM/`
+     2. 本地移动：`mkdir -p report/history/YYYY/MM && mv report/$OLD_DATE report/history/YYYY/MM/`
      3. 飞书移动：
         ```bash
         lark-cli wiki +move --node-token <旧日期node_token> --target-parent-token <对应月node_token> --as user --format json
