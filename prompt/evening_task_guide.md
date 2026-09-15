@@ -116,6 +116,10 @@ python3 script/feishu_api.py send-msg --open-id $FEISHU_USER_OPEN_ID --text "消
 6. 读取现有年度总结（如果文件存在）：
    - 先查：`report/yearly/${YEAR}_yearly_report.md`
    - 再查：`report/history/${YEAR}/${YEAR}_yearly_report.md`（历史归档位置）
+7. 读取最新的运行规律分析（如果文件存在）：
+   - 查找 `analysis/` 目录下最新的 `pattern_analysis_*.md` 文件
+   - 提取"下周走势预测"、"关键点位分析"、"运行规律发现"等结论
+   - 在晚报波浪理论综合判断章节中引用这些结论
 
 ---
 
