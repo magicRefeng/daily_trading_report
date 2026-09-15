@@ -11,8 +11,10 @@
 ├── prompt/                     # 提示词与任务指南
 │   ├── morning_report_prompt.txt  # 晨报内容提示词
 │   ├── evening_report_prompt.txt  # 晚报内容提示词（含复盘+波浪分析）
+│   ├── pattern_analysis_prompt.txt # 运行规律分析内容提示词
 │   ├── morning_task_guide.md     # 晨报任务执行手册（完整流程）
-│   └── evening_task_guide.md     # 晚报任务执行手册（完整流程）
+│   ├── evening_task_guide.md     # 晚报任务执行手册（完整流程）
+│   └── pattern_analysis_task_guide.md # 规律分析任务执行手册
 ├── script/                     # 脚本目录
 │   ├── auto_commit.sh            # 自动提交脚本
 │   └── feishu_api.py             # 飞书API工具脚本（自建应用直连）
@@ -37,6 +39,8 @@
                     ├── morning_report_YYYYMMDD.md
                     ├── evening_report_YYYYMMDD.md
                     └── day_summary_YYYYMMDD.md
+├── analysis/                  # 运行规律分析目录（每周更新）
+│   └── pattern_analysis_YYYYWW.md  # 周度规律分析报告
 ```
 
 ### 归档规则
@@ -69,7 +73,17 @@
 ### 反馈闭环机制
 ```
 晨报预测 → 实际行情 → 晚报复盘 → 规则沉淀 → 优化晨报
+                            ↑
+                    运行规律分析（每周日）
 ```
+
+### 运行规律分析（每周日晚上8点）
+- 多周期K线规律分析（月K、周K、日K、60分、30分）
+- 均线系统排列分析与量价关系
+- 关键点位统计（支撑位、压力位、黄金分割位）
+- 历史相似形态比对与走势概率统计
+- 下周走势预测与策略建议
+- 晚报任务读取分析结论作为波浪理论综合判断的参考
 
 ### 规则库自动更新
 晚报复盘后，系统会自动：
@@ -82,6 +96,8 @@
 ```
 首页
 ├── YYYY年M月月度总结            ← 当月月度总结（方便查看）
+├── 规律分析                     ← 每周更新的运行规律分析
+│   └── YYYY年第WW周 运行规律分析
 ├── 近期日报（最近7个交易日）
 │   └── YYYY年MM月DD日 交易信息动态   ← 内容来自 day_summary 文件
 │       ├── A股晨报
