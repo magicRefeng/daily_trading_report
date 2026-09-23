@@ -189,9 +189,12 @@ def clean_table_blocks(blocks):
 
 
 def insert_blocks_to_doc(document_id, parent_block_id, blocks, index=0):
-    """使用嵌套块API插入文档内容（支持扁平结构）"""
+    """使用嵌套块API插入文档内容（支持分批插入，突破1000块限制）"""
     token = get_tenant_token()
     clean_table_blocks(blocks)
+
+    # 构建 block_id -> block 映射
+    block_map = {b["block_id"]: b for b in blocks if b.get("block_id")}
 
     # 收集所有被引用为子块的 block_id（这些不是顶层块）
     child_ids = set()
@@ -201,22 +204,79 @@ def insert_blocks_to_doc(document_id, parent_block_id, blocks, index=0):
                 child_ids.add(child_id)
 
     # 顶层块 = 不被任何块引用为子块的块
-    top_level_ids = [b["block_id"] for b in blocks if b.get("block_id") and b.get("block_id") not in child_ids]
+    top_level_blocks = [b for b in blocks if b.get("block_id") and b.get("block_id") not in child_ids]
 
     # 清理所有块的 parent_id（API不接受此字段）
     for b in blocks:
         b.pop("parent_id", None)
 
-    # 一次性发送所有块
-    data = {
-        "index": index,
-        "children_id": top_level_ids,
-        "descendants": blocks,
-    }
-    result = api_call("POST", f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/descendant",
-                      token=token, data=data, params={"document_revision_id": "-1"})
-    if result.get("code") != 0:
-        raise Exception(f"插入块失败: {result}")
+    # 计算每个块的子树大小
+    _size_cache = {}
+    def subtree_size(block_id):
+        if block_id in _size_cache:
+            return _size_cache[block_id]
+        block = block_map.get(block_id)
+        if not block:
+            _size_cache[block_id] = 1
+            return 1
+        size = 1
+        for child_id in block.get("children", []):
+            if isinstance(child_id, str):
+                size += subtree_size(child_id)
+        _size_cache[block_id] = size
+        return size
+
+    # 分批（每批最多500个块，留安全余量，API限制1000）
+    BATCH_SIZE = 500
+    batches = []
+    current_batch_top_ids = []
+    current_batch_size = 0
+
+    for tb in top_level_blocks:
+        tb_size = subtree_size(tb["block_id"])
+        if current_batch_size + tb_size > BATCH_SIZE and current_batch_top_ids:
+            batches.append(current_batch_top_ids)
+            current_batch_top_ids = []
+            current_batch_size = 0
+        current_batch_top_ids.append(tb["block_id"])
+        current_batch_size += tb_size
+
+    if current_batch_top_ids:
+        batches.append(current_batch_top_ids)
+
+    # 逐批插入
+    current_index = index
+    for batch_top_ids in batches:
+        # 收集这批的所有块（顶层 + 所有后代）
+        batch_block_ids = set()
+
+        def collect_descendants(block_id):
+            if block_id in batch_block_ids:
+                return
+            batch_block_ids.add(block_id)
+            block = block_map.get(block_id)
+            if block:
+                for child_id in block.get("children", []):
+                    if isinstance(child_id, str):
+                        collect_descendants(child_id)
+
+        for bid in batch_top_ids:
+            collect_descendants(bid)
+
+        batch_blocks = [block_map[bid] for bid in batch_block_ids if bid in block_map]
+
+        data = {
+            "index": current_index,
+            "children_id": batch_top_ids,
+            "descendants": batch_blocks,
+        }
+        result = api_call("POST", f"/docx/v1/documents/{document_id}/blocks/{parent_block_id}/descendant",
+                          token=token, data=data, params={"document_revision_id": "-1"})
+        if result.get("code") != 0:
+            raise Exception(f"插入块失败: {result}")
+
+        current_index += len(batch_top_ids)
+
     return True
 
 
