@@ -30,44 +30,10 @@
 
 ### 晚报生成流程
 ```
-0. 从 GitHub 拉取代码仓库（定时任务在空沙盒中运行，必须先拉取）
-1. 读取 prompt/evening_report_prompt.txt 和 prompt/evening_task_guide.md
-2. 收集当日市场数据（含读取最新运行规律分析结论）
-3. 进行波浪理论多周期分析（月K、周K、日K、60分、30分）
-4. 绘制波浪结构示意图
-5. 回顾晨报预测内容
-6. 对比实际行情走势
-7. 量化评估准确率
-8. 分析偏差根因
-9. 沉淀为检查清单和规则
-10. 保存为 report/YYYYMMDD/evening_report_YYYYMMDD.md
-11. 更新当日交易信息动态（完整版）：report/YYYYMMDD/day_summary_YYYYMMDD.md
-12. 生成/更新月度总结（每次更新，双份存储：monthly/ 和 history/YYYY/MM/）
-13. 生成/更新年度总结（每月第一个交易日更新，双份存储：yearly/ 和 history/YYYY/）
-14. 执行 ./script/auto_commit.sh 晚报
-15. 同步到飞书知识库（通过 script/feishu_api.py）
-16. 发送飞书消息通知（通过 script/feishu_api.py send-msg）
-17. 归档清理（当月第一个交易日特殊处理：上月全部归档）
+2. **波浪分析格式**：与AGENTS.md中规定的格式一致，包含月/周/日/60分/30分五个周期及Mermaid波浪图
+3. **复盘格式**：与AGENTS.md中规定的晚报复盘格式一致，包含核心判断回顾、板块回顾、准确率量化、偏差根因、检查清单、新规则
+4. **策略回顾格式**：与AGENTS.md中规定的"晚报 - 策略回顾与调整"格式一致
 ```
-
-### 运行规律分析流程（每周日执行）
-```
-0. 从 GitHub 拉取代码仓库
-1. 读取 prompt/pattern_analysis_prompt.txt 和 prompt/pattern_analysis_task_guide.md
-2. 读取上期规律分析报告（验证上周预测）
-3. 收集多周期K线数据（月K、周K、日K、60分、30分）
-4. 进行多周期K线规律分析
-5. 进行关键点位分析
-6. 进行历史相似形态比对
-7. 总结运行规律发现
-8. 预测下周走势
-9. 保存为 analysis/pattern_analysis_YYYYWW.md
-10. 更新 rules.md（新发现的规律）
-11. 执行 ./script/auto_commit.sh 规律分析
-12. 同步到飞书知识库（通过 script/feishu_api.py）
-13. 发送飞书消息通知
-```
-
 ## 输出格式要求
 
 ### 晨报核心判断格式（必须严格遵守）
