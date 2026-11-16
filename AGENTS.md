@@ -30,8 +30,19 @@
 
 ### 晚报生成流程
 ```
-当交易日为非交易日（节假日）时，晚报采用"节前复盘 + 假期全球市场追踪 + 节后策略"三段式结构，
-文件仍保存为 report/$DATE/evening_report_$DATE.md，标题标注"休市特刊"；
+常规交易日：
+0. 从 GitHub 拉取代码仓库（定时任务在空沙盒中运行，必须先拉取）
+1. 读取 prompt/evening_report_prompt.txt 和 prompt/evening_task_guide.md
+2. 读取当日晨报、day_summary（晨报版）、rules.md、月度/年度总结、最新规律分析
+3. 收集当日行情、资金、板块、海外、汇率利率、盘后公告数据
+4. 按模板生成晚报（含波浪多周期分析 + 晨报复盘）
+5. 更新 day_summary（完整版）与月度总结（每次）
+6. 执行 ./script/auto_commit.sh 晚报 并 push
+7. 同步飞书知识库、发送飞书消息、执行归档清理
+
+非交易日（节假日）：
+晚报采用"节前复盘 + 假期全球市场追踪 + 节后策略"三段式结构，
+文件仍保存为 report/$DATE/evening_report_$DATE.md，标题标注"休市特刊"。
 ```
 ## 输出格式要求
 
